@@ -2,6 +2,7 @@
 api/docs/
 ollama_data/
 qdrant_data/
+flashrank_cache/
 
 # Python
 __pycache__/
