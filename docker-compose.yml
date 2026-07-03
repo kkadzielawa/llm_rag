@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 1. The Model Server (GPU Accelerated)
+  llm-server:
+    image: ollama/ollama:latest
+    container_name: agent_llm_engine
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # UI for the LLM
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3000:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://llm-server:11434
+      - OPENAI_API_BASE_URL=http://api-gateway:8000/v1
+      - OPENAI_API_KEY=dummy_key
+      - WEBUI_SECRET_KEY=my_secure_secret_key_123
+    restart: always
+
+  # 2. Agent Memory (Vector DB)
+  vector-db:
+    image: qdrant/qdrant:latest
+    container_name: agent_memory
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+
+  # 3. Your Tier 1 API
+  api-gateway:
+    image: python:3.11-slim
+    container_name: agent_api
+    ports:
+      - "8000:8000"
+    command: bash -c "pip install --no-cache-dir -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./api:/app
+    working_dir: /app
+    depends_on:
+      - llm-server
+      - vector-db

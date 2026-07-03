@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+qdrant-client
+ollama
+pydantic
+pypdf
+watchdog
+flashrank
+beautifulsoup4==4.12.3
+requests==2.31.0
